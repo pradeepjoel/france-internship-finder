@@ -1,18 +1,18 @@
 from src.db import init_db, conn
-from src.wttj_bronze import wttj_list_urls_france
+from src.wttj_bronze import wttj_list_urls_france, fetch
 from src.wttj_silver import parse_job_fields
 from src.gold_features import compute_gold
-import requests
 
-HEADERS = {"User-Agent": "Mozilla/5.0"}
-
-def fetch(url: str) -> str:
-    r = requests.get(url, headers=HEADERS, timeout=30)
-    r.raise_for_status()
-    return r.text
 
 def bronze_ingest():
-    urls = wttj_list_urls_france(limit=400, max_scrolls=25)
+    # Use Playwright discovery in Actions to get 300+ URLs
+    urls = wttj_list_urls_france(
+        limit=400,
+        max_scrolls=35,
+        headless=True,     # IMPORTANT for GitHub Actions
+        debug=True,
+        prefer_playwright=True,
+    )
     print(f"[BRONZE] discovered urls: {len(urls)}")
 
     new = 0
@@ -29,6 +29,7 @@ def bronze_ingest():
             except Exception:
                 continue
     print(f"[BRONZE] new pages: {new}")
+
 
 def silver_transform():
     new = 0
@@ -50,16 +51,17 @@ def silver_transform():
                 """, (
                     url,
                     source,
-                    f["title"],
-                    f["company"],
-                    f["location"],
-                    f["contract"],
-                    f["description"],
+                    f.get("title"),
+                    f.get("company"),
+                    f.get("location"),
+                    f.get("contract"),
+                    f.get("description"),
                 ))
                 new += 1
             except Exception:
                 continue
     print(f"[SILVER] parsed: {new}")
+
 
 def gold_compute():
     new = 0
@@ -80,15 +82,16 @@ def gold_compute():
                     VALUES (?, ?, ?, ?, ?)
                 """, (
                     url,
-                    g["language"],
-                    g["english_score"],
-                    g["contract_type"],
-                    g["is_target"],
+                    g.get("language"),
+                    g.get("english_score"),
+                    g.get("contract_type"),
+                    g.get("is_target"),
                 ))
                 new += 1
             except Exception:
                 continue
     print(f"[GOLD] computed: {new}")
+
 
 def main():
     init_db()
@@ -96,6 +99,7 @@ def main():
     silver_transform()
     gold_compute()
     print("✅ Pipeline completed.")
+
 
 if __name__ == "__main__":
     main()
