@@ -1,7 +1,5 @@
-[theme]
-base="dark"
-primaryColor="#FF4B4B"
-backgroundColor="#0B0F14"
-secondaryBackgroundColor="#111827"
-textColor="#E5E7EB"
-font="sans serif"
+[server]
+headless = true
+
+[client]
+showErrorDetails = false
