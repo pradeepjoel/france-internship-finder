@@ -1,91 +1,84 @@
 import json
 import re
 from typing import Optional, Dict
+
 from bs4 import BeautifulSoup
 
-def _strip_html(s: str) -> str:
+def _clean_text(s: str) -> str:
     if not s:
         return ""
-    soup = BeautifulSoup(s, "lxml")
-    return soup.get_text("\n", strip=True)
-
-def _first_text(node):
-    return node.get_text(strip=True) if node else ""
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
 
 def _parse_jsonld_jobposting(soup: BeautifulSoup) -> Optional[Dict]:
-    scripts = soup.select("script[type='application/ld+json']")
+    """
+    Try to extract JobPosting from JSON-LD scripts if present.
+    """
+    scripts = soup.find_all("script", attrs={"type": "application/ld+json"})
     for sc in scripts:
-        raw = sc.get_text(strip=True)
-        if not raw:
+        try:
+            data = json.loads(sc.get_text(strip=True))
+        except Exception:
             continue
 
-        try:
-            data = json.loads(raw)
-        except Exception:
-            raw2 = re.sub(r",\s*}", "}", raw)
-            raw2 = re.sub(r",\s*]", "]", raw2)
-            try:
-                data = json.loads(raw2)
-            except Exception:
-                continue
-
-        items = [data] if isinstance(data, dict) else data if isinstance(data, list) else []
-        for obj in items:
-            if not isinstance(obj, dict):
-                continue
-            if obj.get("@type") == "JobPosting":
-                title = obj.get("title", "") or ""
-
-                org = obj.get("hiringOrganization") or {}
-                company = org.get("name", "") if isinstance(org, dict) else ""
-
-                location_text = ""
-                loc = obj.get("jobLocation")
-                if isinstance(loc, list) and loc:
-                    loc = loc[0]
-                if isinstance(loc, dict):
-                    addr = loc.get("address") or {}
-                    if isinstance(addr, dict):
-                        city = addr.get("addressLocality") or ""
-                        region = addr.get("addressRegion") or ""
-                        country = addr.get("addressCountry") or ""
-                        location_text = ", ".join(x for x in [city, region, country] if x)
-
-                contract = obj.get("employmentType") or ""
-                if isinstance(contract, list):
-                    contract = ", ".join(str(x) for x in contract if x)
-
-                description = _strip_html(obj.get("description", "") or "")
-
-                return {
-                    "title": title,
-                    "company": company,
-                    "location": location_text,
-                    "contract": str(contract),
-                    "description": description
-                }
+        # JSON-LD can be dict or list
+        candidates = data if isinstance(data, list) else [data]
+        for item in candidates:
+            if isinstance(item, dict) and item.get("@type") == "JobPosting":
+                return item
 
     return None
 
-def parse_job_fields(html: str) -> dict:
-    soup = BeautifulSoup(html, "lxml")
+def parse_job_fields(html: str, url: str) -> dict:
+    """
+    Parse job page HTML -> structured fields (title/company/location/contract/description)
+    Uses html.parser (no lxml dependency).
+    """
+    soup = BeautifulSoup(html, "html.parser")
 
-    job = _parse_jsonld_jobposting(soup)
-    if job:
-        return job
+    title = company = location = contract = description = ""
 
-    title = _first_text(soup.select_one("h1"))
-    company = _first_text(soup.select_one("[data-testid='job-header-company-name']"))
-    location = _first_text(soup.select_one("[data-testid='job-location']"))
-    contract = _first_text(soup.select_one("[data-testid='job-contract-type']"))
+    jp = _parse_jsonld_jobposting(soup)
+    if jp:
+        title = jp.get("title") or ""
+        org = jp.get("hiringOrganization") or {}
+        if isinstance(org, dict):
+            company = org.get("name") or ""
+        loc = jp.get("jobLocation") or ""
+        # jobLocation can be dict/list
+        if isinstance(loc, list) and loc:
+            loc = loc[0]
+        if isinstance(loc, dict):
+            addr = loc.get("address") or {}
+            if isinstance(addr, dict):
+                city = addr.get("addressLocality") or ""
+                region = addr.get("addressRegion") or ""
+                country = addr.get("addressCountry") or ""
+                parts = [p for p in [city, region, country] if p]
+                location = ", ".join(parts)
 
-    desc_node = soup.select_one("[data-testid='job-description']")
-    description = desc_node.get_text("\n", strip=True) if desc_node else soup.get_text("\n", strip=True)
+        contract = jp.get("employmentType") or ""
+        description = soup.get_text(" ", strip=True)
+
+    # fallback selectors
+    if not title:
+        h1 = soup.find("h1")
+        title = _clean_text(h1.get_text()) if h1 else ""
+
+    if not company:
+        # WTTJ often includes company in meta or structured parts; keep best-effort:
+        og = soup.find("meta", attrs={"property": "og:site_name"})
+        company = _clean_text(og.get("content")) if og and og.get("content") else ""
+
+    if not description:
+        description = soup.get_text(" ", strip=True)
 
     return {
-        "title": title,
-        "company": company,
-        "location": location,
-        "contract": contract,
-        "description": description
+        "url": url,
+        "source": "WTTJ",
+        "title": _clean_text(title),
+        "company": _clean_text(company),
+        "location": _clean_text(location),
+        "contract": _clean_text(contract),
+        "description": _clean_text(description),
     }
