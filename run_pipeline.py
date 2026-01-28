@@ -1,10 +1,18 @@
 from src.db import init_db, conn
-from src.wttj_bronze import wttj_list_urls_france, fetch
+from src.wttj_bronze import wttj_list_urls_france
 from src.wttj_silver import parse_job_fields
 from src.gold_features import compute_gold
+import requests
+
+HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+def fetch(url: str) -> str:
+    r = requests.get(url, headers=HEADERS, timeout=30)
+    r.raise_for_status()
+    return r.text
 
 def bronze_ingest():
-    urls = wttj_list_urls_france(limit=400, max_scrolls=30)
+    urls = wttj_list_urls_france(limit=400, max_scrolls=25)
     print(f"[BRONZE] discovered urls: {len(urls)}")
 
     new = 0
@@ -36,9 +44,18 @@ def silver_transform():
             try:
                 f = parse_job_fields(html)
                 c.execute("""
-                    INSERT OR REPLACE INTO silver_jobs(url, source, title, company, location, contract, description)
+                    INSERT OR REPLACE INTO silver_jobs
+                    (url, source, title, company, location, contract, description)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                """, (url, source, f["title"], f["company"], f["location"], f["contract"], f["description"]))
+                """, (
+                    url,
+                    source,
+                    f["title"],
+                    f["company"],
+                    f["location"],
+                    f["contract"],
+                    f["description"],
+                ))
                 new += 1
             except Exception:
                 continue
@@ -58,9 +75,16 @@ def gold_compute():
             try:
                 g = compute_gold(title, contract, description)
                 c.execute("""
-                    INSERT OR REPLACE INTO gold_jobs(url, language, english_score, contract_type, is_target)
+                    INSERT OR REPLACE INTO gold_jobs
+                    (url, language, english_score, contract_type, is_target)
                     VALUES (?, ?, ?, ?, ?)
-                """, (url, g["language"], g["english_score"], g["contract_type"], g["is_target"]))
+                """, (
+                    url,
+                    g["language"],
+                    g["english_score"],
+                    g["contract_type"],
+                    g["is_target"],
+                ))
                 new += 1
             except Exception:
                 continue
