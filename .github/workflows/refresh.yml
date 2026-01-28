@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Pull LFS files
+        run: git lfs pull
 
       - uses: actions/setup-python@v5
         with:
@@ -34,3 +39,4 @@ jobs:
           git add data/jobs.sqlite
           git commit -m "Auto refresh: jobs data" || echo "No changes to commit"
           git push
+
