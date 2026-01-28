@@ -4,7 +4,6 @@ from src.wttj_silver import parse_job_fields
 from src.gold_features import compute_gold
 
 def bronze_ingest():
-    # Playwright-based discovery
     urls = wttj_list_urls_france(limit=400, max_scrolls=30)
     print(f"[BRONZE] discovered urls: {len(urls)}")
 
