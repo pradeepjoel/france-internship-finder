@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# keep data folder but track the sqlite db
+data/*
+!data/jobs.sqlite
+
+# streamlit cache
+.streamlit/secrets.toml
