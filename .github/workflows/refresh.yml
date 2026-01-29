@@ -18,20 +18,13 @@ jobs:
         with:
           lfs: true
 
-      - name: Pull LFS files
+      - name: Pull LFS files (extra safety)
         run: git lfs pull
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      # ✅ THIS IS THE CRITICAL FIX FOR PLAYWRIGHT ON UBUNTU 24.04
-      - name: Install system deps for Playwright
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libasound2t64
-          python -m playwright install chromium
 
       - name: Install Python dependencies
         run: |
