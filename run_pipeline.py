@@ -1,17 +1,26 @@
 from src.db import init_db, conn
-from src.wttj_bronze import wttj_list_urls_france, fetch
+from src.wttj_bronze import wttj_list_urls_france
 from src.wttj_silver import parse_job_fields
 from src.gold_features import compute_gold
 
+import requests
+
+HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+def fetch(url: str) -> str:
+    r = requests.get(url, headers=HEADERS, timeout=30)
+    r.raise_for_status()
+    return r.text
+
 
 def bronze_ingest():
-    # Use Playwright discovery in Actions to get 300+ URLs
+    # Try Playwright discovery (if available), else fallback inside wttj_list_urls_france
     urls = wttj_list_urls_france(
         limit=400,
         max_scrolls=35,
-        headless=True,     # IMPORTANT for GitHub Actions
+        headless=True,          # IMPORTANT for GitHub Actions
         debug=True,
-        prefer_playwright=True,
+        prefer_playwright=True, # your bronze function should handle fallback
     )
     print(f"[BRONZE] discovered urls: {len(urls)}")
 
