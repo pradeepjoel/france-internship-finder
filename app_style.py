@@ -4,65 +4,72 @@ def inject_css():
     st.markdown(
         """
 <style>
+/* Use Streamlit theme variables so it works in LIGHT + DARK mode */
+:root {
+  --bg: var(--background-color);
+  --card: var(--secondary-background-color);
+  --text: var(--text-color);
+  --border: rgba(120,120,120,0.25);
+}
+
 /* Page width & spacing */
 .block-container {
-    padding-top: 1.2rem;
-    padding-bottom: 2rem;
-    max-width: 1200px;
+  padding-top: 1.2rem;
+  padding-bottom: 2rem;
+  max-width: 1200px;
 }
-h1, h2, h3 { letter-spacing: -0.02em; }
+h1, h2, h3 { letter-spacing: -0.02em; color: var(--text); }
 
-/* ---------- DARK DEFAULT (works even if user doesn't set theme) ---------- */
+/* Sidebar */
 section[data-testid="stSidebar"] {
-    background-color: #0B0F14;
-    border-right: 1px solid rgba(255,255,255,0.06);
-}
-div[data-testid="stMetric"] {
-    background: #111827;
-    padding: 14px;
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.08);
-}
-div[data-testid="stDataFrame"] {
-    border-radius: 14px;
-    border: 1px solid rgba(255,255,255,0.08);
-    overflow: hidden;
-}
-.job-card {
-    padding: 14px 16px;
-    border-radius: 16px;
-    background: #111827;
-    border: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 12px;
-}
-.job-title { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
-.job-meta  { opacity: 0.85; margin-bottom: 8px; font-size: 14px; }
-.badge {
-    padding: 4px 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,0.15);
-    font-size: 12px;
+  background-color: var(--card) !important;
+  border-right: 1px solid var(--border) !important;
 }
 
-/* ---------- LIGHT MODE FIX (so light-mode users can read your UI) ---------- */
-@media (prefers-color-scheme: light) {
-  section[data-testid="stSidebar"] {
-      background-color: #F8FAFC !important;
-      border-right: 1px solid rgba(0,0,0,0.08) !important;
-  }
-  div[data-testid="stMetric"] {
-      background: #FFFFFF !important;
-      border: 1px solid rgba(0,0,0,0.10) !important;
-  }
-  div[data-testid="stDataFrame"] {
-      border: 1px solid rgba(0,0,0,0.10) !important;
-  }
-  .job-card {
-      background: #FFFFFF !important;
-      border: 1px solid rgba(0,0,0,0.10) !important;
-  }
-  .job-meta { opacity: 0.9 !important; }
-  .badge { border: 1px solid rgba(0,0,0,0.18) !important; }
+/* Metric cards */
+div[data-testid="stMetric"] {
+  background: var(--card) !important;
+  padding: 14px !important;
+  border-radius: 14px !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+}
+div[data-testid="stMetric"] * { color: var(--text) !important; }
+
+/* Dataframe wrapper */
+div[data-testid="stDataFrame"] {
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+/* Job cards */
+.job-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.job-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  color: var(--text);
+}
+.job-meta {
+  opacity: 0.85;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+.badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text);
 }
 </style>
         """,
