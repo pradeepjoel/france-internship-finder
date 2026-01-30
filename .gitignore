@@ -9,5 +9,4 @@ data/*
 
 # streamlit cache
 .streamlit/secrets.toml
-data/jobs.sqlite
-data/jobs.sqlite
+
